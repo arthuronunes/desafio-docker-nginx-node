@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodenginxdb
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - nginx-network
+    healthcheck:
+      test: "/usr/bin/mysql --user=root --password=root --execute \"SHOW DATABASES;\""
+      interval: 5s
+      timeout: 20s
+      retries: 5
+
+  app:
+    container_name: app
+    build:
+      context: node
+    entrypoint: node index.js
+    networks:
+      - nginx-network
+    volumes:
+      - ./node:/usr/src/app
+    tty: true
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: "node /healthcheck.js"
+      interval: 5s
+      timeout: 20s
+      retries: 5
+
+  nginx:
+    build: 
+      context: nginx
+    container_name: nginx
+    networks:
+      - nginx-network
+    ports:
+      - "8080:80"
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  nginx-network:
+    driver: bridge
