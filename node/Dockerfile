@@ -2,6 +2,8 @@ FROM node:14.17.0-slim
 
 COPY . .
 
+RUN npm install
+
 EXPOSE 3000
 
-ENTRYPOINT ["node", "index.js"]
+ENTRYPOINT ["node", "npm", "start"]
